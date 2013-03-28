@@ -1,0 +1,9 @@
+
+default constructor public Foo() { } can be removed
+
+implements java.io.Serializable => @serializable
+
+private transient int x => @transient private var x
+private volatile int x => @volatile private var x
+
+def foo() : Int = { return foo; } => def foo() : Int = foo

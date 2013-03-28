@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="windows-1252"?>
+<project name="java2scala" default="backup" basedir="."
+ xmlns:artifact="antlib:org.apache.maven.artifact.ant">
+
+  <property name="project" value="java2scala" />
+
+  <property name="root.dir" value="."/>
+  <property name="testdata.dir" value="${root.dir}/testdata"/>
+  <property name="test.output.dir" value="${root.dir}/target/testout"/>
+
+  <property file="local.properties"/>
+  <property file="build.properties"/>
+  <property environment="env"/>
+
+  <target name="init">
+    <tstamp/>
+  </target>
+
+  <target name="mark-test-ok" depends="init" >  
+    <copy file="${test.output.dir}/${test.profile}/${test.file}.scala"
+     todir="${testdata.dir}/expected/${test.profile}" overwrite="true"  />
+  </target>
+
+  <target name="mark-all-tests-ok" depends="init">
+    <copy todir="${testdata.dir}/expected" overwrite="true" >
+      <fileset dir="${test.output.dir}" />
+    </copy>
+  </target>
+
+  <target name="backup" depends="init">
+    <property name="backup.dir" value="./" />
+    <zip destfile="${backup.dir}${project}-${DSTAMP}.zip"
+     basedir="${root.dir}" excludes="target/**, **/${project}-*.zip" />
+  </target>
+</project>
