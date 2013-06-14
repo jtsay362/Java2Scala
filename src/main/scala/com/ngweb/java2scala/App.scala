@@ -6,6 +6,11 @@ import java.util.regex.Matcher
 import scala.util.matching.Regex
 import scala.collection.mutable
 
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
+
+import org.apache.commons.lang3.StringUtils
+
 import com.taco.text.CPunctuationState
 import com.taco.gut.resource._
 import com.taco.gut.resource.file._
@@ -17,11 +22,15 @@ object App
   {
     new App().convert(args)
   }
+  
+  private val _logger = LoggerFactory.getLogger(classOf[App])
 }
 
 class App
 {
-
+  import App._
+   
+  
   /**
    * @param args the command line arguments
    */
@@ -78,11 +87,11 @@ class App
     }
 
 
-    println("Java 2 Scala")
+    _logger.info("Java 2 Scala")
 
     readOptions()
 
-    println("Input file = '" + inFilename + "'")       
+    _logger.info("Input file = '" + inFilename + "'")       
     
     val fr = FileResourceSystem.instance.get(
       inFilename, null).asInstanceOf[IDataResource]
@@ -98,7 +107,7 @@ class App
 
     val s = convertSource(sr.toString)
 
-    //println("converted file = \n" + s)
+    _logger.trace("converted file = \n" + s)
 
     val system = FileResourceSystem.instance
     val ofr = system.get(outFilename, null).
@@ -106,7 +115,7 @@ class App
 
     val dir = system.getParentContainer(ofr)
 
-    println("out dir = " + dir.getFullName)
+    _logger.info("out dir = " + dir.getFullName)
     
     if (!system.exists(dir)) 
     {
@@ -194,29 +203,11 @@ class App
     s : String
   ) : String =
   {
-    GENERICS_REGEX.replaceAllIn(s, (md) =>
+    GENERICS_REGEX.replaceAllIn(s, md =>
     {
-      val sb = new StringBuilder("[")
-
-      TYPE_PARAMETER_REGEX.findAllIn(md.group(0)).matchData.foreach((tpmd) =>
-      {
-        sb ++= tpmd.group(1)
-
-        tpmd.group(2) match
-        {
-          case "super" => sb ++= " >: " + tpmd.group(3)
-          case "extends" => sb ++= " <: " + tpmd.group(3)
-          case _ =>
-        }
-
-        sb ++= ", "
-      })
-
-      sb.setLength(sb.length - 2)
-
-      sb ++= "]"
-
-      sb.toString()
+      md.group(0).replaceAll("""<\s*>""", "").      
+        replace('?', '_').replace('<', '[').replace('>', ']').      
+        replaceAll("""\bsuper\b""", ">:").replaceAll("""\bextends\b""", "<:")        
     })
   }
 
@@ -225,7 +216,7 @@ class App
     s : String
   ) : String =
   {
-    ("(" + USER_TYPE_REGEX_STRING + """)\.class""").r.replaceAllIn(s, (md) =>
+    ("(" + USER_TYPE_REGEX_STRING + """)\.class""").r.replaceAllIn(s, md =>
     {
       Matcher.quoteReplacement("classOf[" + md.group(1) + "]")
     })
@@ -237,10 +228,8 @@ class App
   ) : String =
   {
     ("""(\w+)\s+instanceof\s+(""" + USER_TYPE_REGEX_STRING + ")").r.replaceAllIn(s,
-      (md) =>
-      {
-        Matcher.quoteReplacement(md.group(1) + ".isInstanceOf[" + md.group(2) + "]")
-      })      
+      md => Matcher.quoteReplacement(md.group(1) + ".isInstanceOf[" + md.group(2) + "]")
+    )      
   }
 
   private def convertPrimitiveTypeCasts
@@ -257,14 +246,13 @@ class App
       }
     )
   }
-  
-  
+    
   private def convertUserTypeCasts
   (
     s : String
   ) : String =
   {
-    ("""\(\s*(""" + USER_TYPE_REGEX_STRING + 
+    ("""\(\s*(""" + GENERIC_USER_TYPE_REGEX_STRING + 
      """)\s*\)\s*([\w\.]+)\s*([;,])""").r.replaceAllIn(s, 
       md =>
       {
@@ -298,22 +286,22 @@ class App
   {
     EXTENDS_IMPLEMENTS_CLAUSE_REGEX.replaceAllIn(s, (md) =>
     {
-      println("Converting extends/implements clause " + md.group(0))
+      _logger.debug("Converting extends/implements clause " + md.group(0))
 
       for (i <- 0 to md.groupCount)
       {
-        println("group " + i + " = " + md.group(i))
+        _logger.debug("group " + i + " = " + md.group(i))
       }
 
       var foundFirstType = false
 
-      Option(md.group(1)).map((t) =>
+      Option(md.group(1)).map(t =>
         {
           foundFirstType = true
           "extends " + t
         }
       ).getOrElse("") +
-      Option(md.group(9)).map((a) =>
+      Option(md.group(3)).map(a =>
       {
         (
           if (foundFirstType)
@@ -328,7 +316,7 @@ class App
           }
         ) + a
       }).getOrElse("") +
-      Option(md.group(16)).map((a) =>
+      Option(md.group(4)).map(a =>
       {
         ADDITIONAL_GENERIC_USER_TYPE_LIST_REGEX.replaceAllIn(a, (amd) =>
         {
@@ -403,7 +391,11 @@ class App
       Matcher.quoteReplacement(
       ARRAY_TYPE_SUFFIX_REGEX.findFirstMatchIn(rt).map((m) =>
         "Array[" + convertType(rt.substring(0, m.start(1))) + "]").getOrElse(
-          if (rt.contains("."))
+          if (rt == "?")
+          {
+            "_"  
+          } 
+          else if (rt.contains("."))
           {
             rt
           }
@@ -421,6 +413,8 @@ class App
     s : String
   ) : String =
   {
+    _logger.debug("convertMethods: " + s)
+        
     METHOD_SIGNATURE_REGEX.replaceAllIn(s, md =>
     {      
       val methodParameters = md.group(METHOD_GROUP_NAME_PARAMETERS)
@@ -428,7 +422,7 @@ class App
       val noArgs = Option(methodParameters).map( 
         _.trim().isEmpty ).getOrElse(true)  
         
-      println("Converting method " + md.group(0) + ", no args = " + noArgs)  
+      _logger.debug("Converting method " + md.group(0) + ", no args = " + noArgs)  
         
       val sb = new StringBuilder
 
@@ -458,7 +452,7 @@ class App
 
       Option(md.group(METHOD_GROUP_NAME_ANNOTATIONS)).foreach(a =>
       {
-        //println("matched annotations = '" + a + "'")
+        _logger.debug("matched annotations = '" + a + "'")
 
         sb ++= nl
 
@@ -500,7 +494,7 @@ class App
         METHOD_PARAMETER_REGEX.findAllIn(methodParameters).matchData.foreach(
         mpd =>
         {
-          sb ++= indent + Matcher.quoteReplacement(mpd.group(1) + mpd.group(9)) + 
+          sb ++= indent + Matcher.quoteReplacement(mpd.group(1) + mpd.group(3)) + 
             " : " + convertType(mpd.group(2)) + "," + nl
         })
 
@@ -525,10 +519,9 @@ class App
           }
         )
       }
-      //println("converted method =\n" + sb.toString.trim)
-
-        
-        
+      
+      _logger.trace("converted method =\n" + sb.toString.trim)
+               
       sb.toString.trim + (
         if (hasImmediateReturn)
         {
@@ -551,7 +544,7 @@ class App
     {
       needJavaConversions = true
         
-      Matcher.quoteReplacement("for (" + md.group(7) + " <- " + md.group(8) + ")")
+      Matcher.quoteReplacement("for (" + md.group(1) + " <- " + md.group(2) + ")")
     })    
   }
 
@@ -572,7 +565,7 @@ class App
        replaceAll("""(public|final)\s+""", "").
        replaceAll("""static\s+""", "/* static */ ") +
        (if (isVal) "val" else "var") + " " +
-       md.group(9) + 
+       md.group(3) + 
        (
          if (!isVal || doAddTypesToVals)
          {
@@ -583,7 +576,7 @@ class App
            ""
          }
        ) +                                                                  
-       " = " + Option(md.group(10)).getOrElse("_")
+       " = " + Option(md.group(4)).getOrElse("_")
       ).trim
     })
   }
@@ -597,7 +590,7 @@ class App
     ("""new\s+(""" + ANY_TYPE_REGEX_STRING + """)\s*\[([^\]]+)\]""").r.replaceAllIn(
       s, (md) =>
     {
-      "new Array[" + md.group(1) + "](" + md.group(8) + ")"
+      "new Array[" + md.group(1) + "](" + md.group(2) + ")"
     })
   }
   
@@ -644,9 +637,6 @@ class App
 
     rv
   }
-
-  
-  
 
   private def convertCatches
   (
@@ -732,61 +722,69 @@ class App
 
   // Captures 3 groups
   val TYPE_PARAMETER_REGEX_STRING =
-    """([A-Z]\w*)(?:\s+(extends|super)\s+([A-Z]\w*))?"""
+    """((?:[A-Z]\w*|\?))(?:\s+(extends|super)\s+([A-Z]\w*))?"""
 
   val TYPE_PARAMETER_REGEX = TYPE_PARAMETER_REGEX_STRING.r
 
   // Captures 6 groups
-  val GENERICS_REGEX = ("""<\s*""" + TYPE_PARAMETER_REGEX_STRING +
-    """(?:\s*,\s*""" + TYPE_PARAMETER_REGEX_STRING + """)*\s*>""").r
+  //val GENERICS_REGEX = ("""<\s*""" + TYPE_PARAMETER_REGEX_STRING +
+  //  """(?:\s*,\s*""" + TYPE_PARAMETER_REGEX_STRING + """)*\s*>""").r
 
-  val ANNOTATION_REGEX_STRING = """(?:@\w.*\s*)"""
-
-  val ANNOTATION_REGEX = ANNOTATION_REGEX_STRING.r
-
+  val GENERICS_REGEX = ("""<[\w\s,<>?]*>""").r
+    
   // Captures 0 groups
   val USER_TYPE_REGEX_STRING = """(?:(?:[a-z][a-z0-9_]*\.)*[A-Z]\w*)"""
 
   val USER_TYPE_REGEX = USER_TYPE_REGEX_STRING.r
 
-  // Captures 6 groups
+  // Captures 0 groups
   val GENERIC_USER_TYPE_REGEX_STRING = USER_TYPE_REGEX_STRING + """(?:\s*""" +
     GENERICS_REGEX + ")?"
 
+  // Captures 0 groups    
   val ARRAY_TYPE_SUFFIX_REGEX_STRING = """(?:\s*\[\s*\]\s*)"""
 
+  // Captures 0 groups    
   val ARRAY_TYPE_SUFFIX_REGEX = ("(" + ARRAY_TYPE_SUFFIX_REGEX_STRING + 
                                  ")$").r
-
+  // Captures 0 groups
   val PRIMITIVE_TYPE_REGEX_STRING = 
     "int|long|boolean|char|byte|short|float|double"
   
-  // Captures 6 groups
+  // Captures 0 groups
   val ANY_TYPE_REGEX_STRING = "(?:(?:" + GENERIC_USER_TYPE_REGEX_STRING +
      "|" + PRIMITIVE_TYPE_REGEX_STRING + ")" +
      ARRAY_TYPE_SUFFIX_REGEX_STRING + "*)"
 
+  // Captures 0 groups
+  val ANNOTATION_REGEX_STRING = "(?:@" + USER_TYPE_REGEX_STRING + """.*\s*)"""
+
+  // Captures 0 groups  
+  val ANNOTATION_REGEX = ANNOTATION_REGEX_STRING.r
+     
+  // Captures 0 groups   
   val VARIABLE_NAME_REGEX_STRING = """(?:(?:[a-z_]\w*)|(?:[A-Z_]+))"""
 
-  // Captures 8 groups
+  // Captures 2 groups
   // Group 1: Type
-  // Group 8: Variable name
+  // Group 2: Variable name
   val RAW_DECLARATION_REGEX_STRING = 
     "(" + ANY_TYPE_REGEX_STRING + """)\s+(""" + VARIABLE_NAME_REGEX_STRING +
     ")"
 
-  // Captures 7 groups
+  // Captures 1 group
   val ADDITIONAL_GENERIC_USER_TYPE_LIST_REGEX_STRING =
     """\s*,\s*(""" + GENERIC_USER_TYPE_REGEX_STRING + ")"
 
+  // Captures 1 group    
   val ADDITIONAL_GENERIC_USER_TYPE_LIST_REGEX =
      ADDITIONAL_GENERIC_USER_TYPE_LIST_REGEX_STRING.r
 
-  // Captures 23 groups
+  // Captures 4 groups
   // Group 1: extended type (may be null)
-  // Group 8: implements clause (may be null)
-  // Group 9: first implemented type (may be null)
-  // Group 16: all other implemented types (may be null)
+  // Group 2: implements clause (may be null)
+  // Group 3: first implemented type (may be null)
+  // Group 4: all other implemented types (may be null)
   val EXTENDS_IMPLEMENTS_CLAUSE_REGEX_STRING =
     """\b(?:extends\s+(""" + GENERIC_USER_TYPE_REGEX_STRING + """))?(\s+""" +
     """implements\s+(""" + GENERIC_USER_TYPE_REGEX_STRING + ")((?:" +
@@ -799,12 +797,16 @@ class App
   val METHOD_MODIFIERS_REGEX_STRING =
     """((?:(?:public|protected|private|abstract|final|static|synchronized|native)\b\s*)*)"""
 
-  // Captures 9 groups
+  // Captures 3 groups
+  // Group 1: Annotation (may be null)
+  // Group 2: Type
+  // Group 3: Variable name
   val METHOD_PARAMETER_REGEX_STRING =
     """((?:@[\w\.]+\s*(?:\([^\)]*\)\s*)?\s*)*)(?:final\s+)?""" + RAW_DECLARATION_REGEX_STRING
 
   val METHOD_PARAMETER_REGEX = METHOD_PARAMETER_REGEX_STRING.r
 
+  // Captures 1 group
   val IMMEDIATE_RETURN_BODY_REGEX_STRING = """\{\s*return\s+([^};]+);\s*\}"""
 
   val METHOD_SIGNATURE_REGEX_STRING = 
@@ -834,20 +836,19 @@ class App
     METHOD_GROUP_NAME_ANNOTATIONS,
     METHOD_GROUP_NAME_MODIFIERS,
     METHOD_GROUP_NAME_TYPE_PARAMETERS,
-    METHOD_GROUP_NAME_RETURN_TYPE,
-    "5", "6", "7", "8", "9", "10",               
+    METHOD_GROUP_NAME_RETURN_TYPE,               
     METHOD_GROUP_NAME_NAME,
     METHOD_GROUP_NAME_PARAMETERS, 
-    // 9 groups per method parameter
-    "13", "14", "15", "16", "17", "18", "19", "20", "21",
-    "22", "23", "24", "25", "26", "27", "28", "21", "22",
+    // 3 groups per method parameter
+    "8", "9", "10", 
+    "11", "12", "13", 
     METHOD_GROUP_NAME_THROWS,
     METHOD_GROUP_NAME_SEMICOLON,
     METHOD_GROUP_NAME_IMMEDIATE_RETURN_VALUE)
 
-  // Captures 8 groups
-  // Group 7: Element variable name
-  // Group 8: Collection variable name
+  // Captures 2 groups
+  // Group 1: Element variable name
+  // Group 2: Collection variable name
   val ENHANCED_FOR_REGEX = new Regex(
     """for\s*\(\s*""" + GENERIC_USER_TYPE_REGEX_STRING + """\s+(""" +
     VARIABLE_NAME_REGEX_STRING + """)\s*:\s*(""" + VARIABLE_NAME_REGEX_STRING +
@@ -858,11 +859,11 @@ class App
   val DECLARATION_MODIFIERS_REGEX_STRING =
     """((?:(?:public|protected|private|static|final|volatile|strictfp)\s++)*)"""
 
-  // Captures 11 groups
+  // Captures 4 groups
   // Group 1: Modifiers
   // Group 2: Type
-  // Group 9: Variable name
-  // Group 10: Assigned value
+  // Group 3: Variable name
+  // Group 4: Assigned value
   val DECLARATION_REGEX_STRING =
     DECLARATION_MODIFIERS_REGEX_STRING + 
     RAW_DECLARATION_REGEX_STRING + """\s*(?:=\s*([^;]+))?;"""

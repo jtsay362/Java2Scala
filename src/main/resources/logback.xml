@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+  <appender name="console" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder>
+      <pattern>%-5p: %c{1}: %d - %m%n</pattern>
+    </encoder>
+  </appender>
+  
+   <appender name="file" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <file>${logging.outputFilename}</file>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <!-- rollover daily -->
+      <fileNamePattern>mylog-%d{yyyy-MM-dd}.%i.txt</fileNamePattern>
+      <timeBasedFileNamingAndTriggeringPolicy
+            class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+        <!-- or whenever the file size reaches 10MB -->
+        <maxFileSize>10MB</maxFileSize>
+      </timeBasedFileNamingAndTriggeringPolicy>
+    </rollingPolicy>
+    <encoder>
+      <pattern>%-5p: %c{1}: %d - %m%n</pattern>
+    </encoder>
+  </appender>
+  
+  <logger name="com.ngweb.java2scala" level="TRACE"/>
+    
+  <root level="${logging.rootLogLevel}">
+    <appender-ref ref="console"/>
+  </root>
+  
+</configuration>

@@ -9,7 +9,7 @@
 
   <groupId>com.ngweb</groupId>
   <artifactId>Java2Scala</artifactId>
-  <version>1.0-SNAPSHOT</version>
+  <version>1.0.1-SNAPSHOT</version>
   <name>Java to Scala Converter</name>
   <inceptionYear>2011</inceptionYear>
   <dependencies>
@@ -18,6 +18,11 @@
       <artifactId>scala-library</artifactId>
       <version>${scala.version}</version>
     </dependency>
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-lang3</artifactId>
+      <version>${commons.lang3.version}</version>
+    </dependency>    
     <dependency>
       <groupId>com.taco</groupId>
       <artifactId>tacosoft-base</artifactId>

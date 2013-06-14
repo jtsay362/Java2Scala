@@ -50,6 +50,9 @@ class AppTest extends Assertions with ShouldMatchers
   def testMethodParameters() : Unit = testFile("MethodParameters")
 
   @Test
+  def testAnnotatedMethod() : Unit = testFile("AnnotatedMethod")    
+  
+  @Test
   def testAnnotatedMethodParameters() : Unit = testFile("AnnotatedMethodParameters")  
   
   @Test
@@ -75,10 +78,16 @@ class AppTest extends Assertions with ShouldMatchers
 
   @Test
   def testGenericParameter() : Unit = testFile("GenericParameter")
+  
+  @Test
+  def testWildcardGenericParameter() : Unit = testFile("WildcardGenericParameter")  
 
   @Test
   def testGenericReturnType() : Unit = testFile("GenericReturnType")
-
+   
+  @Test
+  def testNestedGenerics() : Unit = testFile("NestedGenerics")
+    
   @Test
   def testStaticfields() : Unit = testFile("StaticFields")
   
