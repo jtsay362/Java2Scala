@@ -12,6 +12,8 @@
   <property file="build.properties"/>
   <property environment="env"/>
 
+	<property name="test.profile" value="default" />
+	
   <target name="init">
     <tstamp/>
   </target>
