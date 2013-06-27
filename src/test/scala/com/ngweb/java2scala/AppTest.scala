@@ -107,7 +107,10 @@ class AppTest extends Assertions with ShouldMatchers
   def testFilledArray() : Unit = testFile("FilledArray")
   
   @Test
-  def testCasts() : Unit = testFile("Casts")  
+  def testCasts() : Unit = testFile("Casts")
+  
+  @Test
+  def testStaticImports() : Unit = testFile("ImportStatic")
   
   protected def testFile
   (

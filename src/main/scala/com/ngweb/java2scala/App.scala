@@ -696,10 +696,8 @@ class App
     )
 
     // Adjust package imports .* => ._
-    """(?m)^[ \t]*import\s+(.*)\.\*\s*;""".r.replaceAllIn(s1, "import $1._")
+    IMPORT_REGEX.replaceAllIn(s1, "import $1._")
   }
-
-  //"""\$""".r.replaceAllIn(s, """\\\$""")
 
   private def
   appendIfEndsWithNonWhitespace
@@ -718,8 +716,11 @@ class App
   
   val wrapperImports = mutable.HashSet[String]()
     
-  var needJavaConversions : Boolean = false
-
+  var needJavaConversions : Boolean = false  
+  
+  val IMPORT_REGEX = 
+    """(?m)^[ \t]*import\s+(?:static\s+)?(.*)\.\*\s*;""".r
+  
   // Captures 3 groups
   val TYPE_PARAMETER_REGEX_STRING =
     """((?:[A-Z]\w*|\?))(?:\s+(extends|super)\s+([A-Z]\w*))?"""
