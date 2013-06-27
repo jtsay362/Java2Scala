@@ -20,7 +20,9 @@
 
   <target name="mark-test-ok" depends="init" >  
     <copy file="${test.output.dir}/${test.profile}/${test.file}.scala"
-     todir="${testdata.dir}/expected/${test.profile}" overwrite="true"  />
+     todir="${testdata.dir}/expected/defaullt" overwrite="true"  />
+    <copy file="${test.output.dir}/${test.profile}/${test.file}.scala"
+     todir="${testdata.dir}/expected/valswithtypes" overwrite="true"  />  	
   </target>
 
   <target name="mark-all-tests-ok" depends="init">
