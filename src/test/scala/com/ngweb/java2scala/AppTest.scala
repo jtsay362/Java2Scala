@@ -23,6 +23,9 @@ class AppTest extends Assertions with ShouldMatchers
 
   @Test
   def testBasicClass() : Unit = testFile("BasicClass")
+  
+  @Test
+  def testStaticInnerClass() : Unit = testFile("StaticInnerClass")  
 
   @Test
   def testSingleImplement() : Unit = testFile("SingleImplement")

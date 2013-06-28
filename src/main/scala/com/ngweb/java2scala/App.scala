@@ -181,8 +181,7 @@ class App
   ) : String =
   {
     var converted = s
-    
-    
+        
     List("Integer", "Long", "Boolean", "Character", "Byte", "Float", "Double").
       foreach(wrapperType =>        
       {
@@ -216,7 +215,7 @@ class App
     s : String
   ) : String =
   {
-    ("(" + USER_TYPE_REGEX_STRING + """)\.class""").r.replaceAllIn(s, md =>
+    ("(" + USER_TYPE_REGEX_STRING + """)\.class\b""").r.replaceAllIn(s, md =>
     {
       Matcher.quoteReplacement("classOf[" + md.group(1) + "]")
     })
@@ -267,8 +266,9 @@ class App
     s : String
   ) : String =
   {
-    """\bpublic\s+((?:abstract|final)\s+)*class\b""".r.replaceAllIn(s,
-      "$1class")
+    """\b(?:public\s+)?((?:abstract|final|static)\s+)*class\b""".r.replaceAllIn(s,
+      md => Option(md.group(1)).getOrElse("").replaceAll("static", "/* static */") + "class"              
+    )
   }
 
   private def convertInterfaces
