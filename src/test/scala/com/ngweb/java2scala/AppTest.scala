@@ -115,6 +115,9 @@ class AppTest extends Assertions with ShouldMatchers
   @Test
   def testStaticImports() : Unit = testFile("ImportStatic")
   
+  @Test
+  def testReturnInnerClass() : Unit = testFile("ReturnInnerClass")
+    
   protected def testFile
   (
     filename : String

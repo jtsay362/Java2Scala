@@ -808,7 +808,7 @@ class App
   val METHOD_PARAMETER_REGEX = METHOD_PARAMETER_REGEX_STRING.r
 
   // Captures 1 group
-  val IMMEDIATE_RETURN_BODY_REGEX_STRING = """\{\s*return\s+([^};]+);\s*\}"""
+  val IMMEDIATE_RETURN_BODY_REGEX_STRING = """\{\s*return\s+([^{};]+);\s*\}"""
 
   val METHOD_SIGNATURE_REGEX_STRING = 
     "(" + ANNOTATION_REGEX_STRING + "*)" +
