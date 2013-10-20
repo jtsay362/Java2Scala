@@ -117,7 +117,10 @@ class AppTest extends Assertions with ShouldMatchers
   
   @Test
   def testReturnInnerClass() : Unit = testFile("ReturnInnerClass")
-    
+
+  @Test
+  def testClassReference() : Unit = testFile("ClassReference")
+
   protected def testFile
   (
     filename : String
