@@ -10,5 +10,5 @@ This command-line tool converts Java code to Scala code. Instead of compiling th
 
 Right now, this project uses dependencies from earlier work I did (com.taco.*) that are not publicly available, but I'll work on making them available soon.
 
-This code was used convert the existing Java code in my website (http://pwnsearch.com/) to Scala. Now the website is written 100% in Scala (with some Java library dependencies of course).
+This code was used convert the existing Java code in my website to Scala. Now the website is written 100% in Scala (with some Java library dependencies of course).
 
