@@ -1,5 +1,7 @@
 # Java2Scala
 
+[![Build Status](https://travis-ci.org/jtsay362/Java2Scala.png?branch=master)](https://travis-ci.org/jtsay362/Java2Scala)
+
 This command-line tool converts Java code to Scala code. Instead of compiling the Java code and producing an AST, the project uses regular expressions to look for patterns and converts those patterns to Scala. The disadvantage of doing this is that the Java syntax is not really understood, so comments in unexpected places and some hairy expressions may mess up conversion. The advantages of using regexes are:
 
 <ul>
